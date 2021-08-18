@@ -1,10 +1,7 @@
 pub mod contract;
 mod error;
-mod state;
-mod msg;
-
-
-pub use state::State;
+pub mod state;
+pub mod msg;
 
 #[cfg(target_arch="wasm32")]
 cosmwasm_std::create_entry_points!(contract);

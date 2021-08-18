@@ -1,15 +1,17 @@
-use cosmwasm_std::{to_binary, Addr, Binary, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
 use crate::state::{config, config_read, State};
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, QueryMsg, UsersResponse, ExistResponse};
+use crate::msg::{InstantiateMsg, ExecuteMsg, QueryMsg, UsersResponse, ExistResponse};
 
 const MIN_NAME_LENGTH: u64 = 3;
 const MAX_NAME_LENGTH: u64 = 64;
 
-pub fn init(
-  deps: DepsMut, 
-  env: Env
+pub fn instantiate(
+  deps: DepsMut,
+  env: Env,
+  _info: MessageInfo,
+  _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
   let state = State {
     users: vec![],
@@ -75,7 +77,7 @@ fn remove_user(
 }
 
 pub fn query(
-  deps: DepsMut,
+  deps: Deps,
   _env: Env,
   msg: QueryMsg,
 ) -> StdResult<Binary> {
@@ -86,7 +88,7 @@ pub fn query(
 }
 
 fn get_users(
-  deps: DepsMut,
+  deps: Deps,
 ) -> StdResult<Binary> {
   let state = config_read(deps.storage).load()?;
   let resp = UsersResponse {users: state.users};
@@ -95,7 +97,7 @@ fn get_users(
 }
 
 fn get_user(
-  deps: DepsMut,
+  deps: Deps,
   user: Addr,
 ) -> StdResult<Binary> {
   let state = config_read(deps.storage).load()?;
