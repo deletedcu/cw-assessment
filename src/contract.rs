@@ -9,13 +9,13 @@ const MAX_NAME_LENGTH: u64 = 64;
 
 pub fn instantiate(
   deps: DepsMut,
-  env: Env,
+  _env: Env,
   _info: MessageInfo,
-  _msg: InstantiateMsg,
+  msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
   let state = State {
-    users: vec![],
-    owner: env.contract.address.clone(),
+    users: msg.users.clone(),
+    owner: msg.owner.clone(),
   };
 
   config(deps.storage).save(&state)?;
