@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QueryMsg",
+  "anyOf": [
+    {
+      "type": "object",
+      "required": [
+        "get_users"
+      ],
+      "properties": {
+        "get_users": {
+          "type": "object",
+          "required": [],
+          "properties": {}
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "get_user"
+      ],
+      "properties": {
+        "get_user": {
+          "type": "object",
+          "required": [
+            "user"
+          ],
+          "properties": {
+            "user": {
+              "$ref": "#/definitions/Addr"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "Addr": {
+      "type": "string"
+    }
+  }
+}

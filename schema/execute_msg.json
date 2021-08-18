@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ExecuteMsg",
+  "anyOf": [
+    {
+      "type": "object",
+      "required": [
+        "add_user"
+      ],
+      "properties": {
+        "add_user": {
+          "type": "object",
+          "required": [
+            "user"
+          ],
+          "properties": {
+            "user": {
+              "$ref": "#/definitions/Addr"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "remove_user"
+      ],
+      "properties": {
+        "remove_user": {
+          "type": "object",
+          "required": [
+            "user"
+          ],
+          "properties": {
+            "user": {
+              "$ref": "#/definitions/Addr"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "Addr": {
+      "type": "string"
+    }
+  }
+}

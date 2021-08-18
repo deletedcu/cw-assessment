@@ -2,7 +2,7 @@ use cosmwasm_std::{to_binary, Addr, Binary, DepsMut, Env, MessageInfo, Response,
 
 use crate::state::{config, config_read, State};
 use crate::error::ContractError;
-use crate::msg::{HandleMsg, QueryMsg, UsersResponse, ExistResponse};
+use crate::msg::{ExecuteMsg, QueryMsg, UsersResponse, ExistResponse};
 
 const MIN_NAME_LENGTH: u64 = 3;
 const MAX_NAME_LENGTH: u64 = 64;
@@ -20,15 +20,15 @@ pub fn init(
   Ok(Response::default())
 }
 
-pub fn handle(
+pub fn execute(
   deps: DepsMut,
   env: Env,
   info: MessageInfo,
-  msg: HandleMsg,
+  msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
   match msg {
-    HandleMsg::AddUser {user} => add_user(deps, env, info, user),
-    HandleMsg::RemoveUser {user} => remove_user(deps, env, info, user),
+    ExecuteMsg::AddUser {user} => add_user(deps, env, info, user),
+    ExecuteMsg::RemoveUser {user} => remove_user(deps, env, info, user),
   }
 }
 
@@ -81,7 +81,7 @@ pub fn query(
 ) -> StdResult<Binary> {
   match msg {
     QueryMsg::GetUsers {} => get_users(deps),
-    QueryMsg::GetUser {user} => exist_user(deps, user),
+    QueryMsg::GetUser {user} => get_user(deps, user),
   }
 }
 
@@ -94,7 +94,7 @@ fn get_users(
   to_binary(&resp)
 }
 
-fn exist_user(
+fn get_user(
   deps: DepsMut,
   user: Addr,
 ) -> StdResult<Binary> {
