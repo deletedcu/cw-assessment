@@ -35,12 +35,6 @@ cargo wasm
 # this runs unit tests with helpful backtraces
 RUST_BACKTRACE=1 cargo unit-test
 
-# this runs integration tests with cranelift backend (uses rust stable)
-cargo integration-test
-
-# this runs integration tests with singlepass backend (needs rust nightly)
-cargo integration-test --no-default-features --features singlepass
-
 # auto-generate json schema
 cargo schema
 ```
