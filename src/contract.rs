@@ -14,8 +14,8 @@ pub fn instantiate(
   msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
   let state = State {
-    users: msg.users.clone(),
-    owner: msg.owner.clone(),
+    users: vec![],
+    owner: msg.recipient,
   };
 
   config(deps.storage).save(&state)?;
@@ -36,19 +36,19 @@ pub fn execute(
 
 fn add_user(
   deps: DepsMut,
-  env: Env,
+  _env: Env,
   _info: MessageInfo,
-  recipient: Addr,
+  user: Addr,
 ) -> Result<Response, ContractError> {
   let mut state = config(deps.storage).load()?;
 
-  if env.contract.address != state.owner {
+  if state.owner != user.as_str() {
     return Err(ContractError::Unauthorized {});
   }
 
-  validate_name(recipient.as_str())?;
+  validate_name(user.as_str())?;
 
-  state.users.push(recipient);
+  state.users.push(user);
   config(deps.storage).save(&state)?;
 
   Ok(Response::default())
@@ -56,18 +56,18 @@ fn add_user(
 
 fn remove_user(
   deps: DepsMut,
-  env: Env,
+  _env: Env,
   _info: MessageInfo,
-  recipient: Addr,
+  user: Addr,
 ) -> Result<Response, ContractError> {
   let mut state = config(deps.storage).load()?;
 
-  if env.contract.address != state.owner {
+  if state.owner != user.as_str() {
     return Err(ContractError::Unauthorized {});
   }
 
   // TODO: check vec delete function
-  let index = state.users.iter().position(|x| *x == recipient).unwrap();
+  let index = state.users.iter().position(|x| *x == user).unwrap();
   if index > 0 {
     state.users.remove(index);
     config(deps.storage).save(&state)?;
