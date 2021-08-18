@@ -82,29 +82,27 @@ pub fn query(
   msg: QueryMsg,
 ) -> StdResult<Binary> {
   match msg {
-    QueryMsg::GetUsers {} => get_users(deps),
-    QueryMsg::GetUser {user} => get_user(deps, user),
+    QueryMsg::GetUsers {} => to_binary(&get_users(deps)?),
+    QueryMsg::GetUser {user} => to_binary(&get_user(deps, user)?),
   }
 }
 
 fn get_users(
   deps: Deps,
-) -> StdResult<Binary> {
+) -> StdResult<UsersResponse> {
   let state = config_read(deps.storage).load()?;
-  let resp = UsersResponse {users: state.users};
   
-  to_binary(&resp)
+  Ok(UsersResponse {users: state.users})
 }
 
 fn get_user(
   deps: Deps,
   user: Addr,
-) -> StdResult<Binary> {
+) -> StdResult<ExistResponse> {
   let state = config_read(deps.storage).load()?;
   let exist = state.users.contains(&user);
-  let resp = ExistResponse {exist};
   
-  to_binary(&resp)
+  Ok(ExistResponse {exist})
 }
 
 // let's not import a regexp library and just do these checks by hand
@@ -155,7 +153,7 @@ mod tests {
   fn proper_initialization() {
     let mut deps = mock_dependencies(&[]);
     let msg = init_msg();
-    let mut env = mock_env();
+    let env = mock_env();
     let info = mock_info("creator", &coins(1000, "earth"));
 
     let res = instantiate(deps.as_mut(), env, info, msg).unwrap();
@@ -170,5 +168,67 @@ mod tests {
         owner: String::from("benefits"),
       }
     );
+  }
+
+  #[test]
+  fn execute_add_user() {
+    let mut deps = mock_dependencies(&[]);
+    let msg = init_msg();
+    let env = mock_env();
+    let info = mock_info("creator", &[]);
+
+    let init_res = instantiate(deps.as_mut(), env, info, msg).unwrap();
+    assert_eq!(0, init_res.messages.len());
+
+    // AddUser test
+    let msg = ExecuteMsg::AddUser { user: Addr::unchecked("addr000")};
+    let env = mock_env();
+    let info = mock_info("beneficiary", &[]);
+    let execute_res = execute(deps.as_mut(), env, info, msg.clone());
+    match execute_res.unwrap_err() {
+      ContractError::Unauthorized { .. } => {}
+      e => panic!("Unexpected error: {:?}", e),
+    }
+  }
+
+  #[test]
+  fn execute_remove_user() {
+    let mut deps = mock_dependencies(&[]);
+    let msg = init_msg();
+    let env = mock_env();
+    let info = mock_info("creator", &[]);
+
+    let init_res = instantiate(deps.as_mut(), env, info, msg).unwrap();
+    assert_eq!(0, init_res.messages.len());
+
+    // RemoveUser test
+    let msg = ExecuteMsg::RemoveUser { user: Addr::unchecked("addr000")};
+    let env = mock_env();
+    let info = mock_info("beneficiary", &[]);
+    let execute_res = execute(deps.as_mut(), env, info, msg.clone());
+    match execute_res.unwrap_err() {
+      ContractError::Unauthorized { .. } => {}
+      e => panic!("Unexpected error: {:?}", e),
+    }
+  }
+
+  #[test]
+  fn query_get_users() {
+    execute_add_user();
+    let deps = mock_dependencies(&[]);
+    let addr0000 = Addr::unchecked("addr0000");
+    // now let's query
+    let query_response = get_users(deps.as_ref()).unwrap();
+    assert_eq!(query_response.users, vec![addr0000]);
+  }
+
+  #[test]
+  fn query_get_user() {
+    execute_add_user();
+    let deps = mock_dependencies(&[]);
+    let addr0000 = Addr::unchecked("addr0000");
+    // now let's query
+    let query_response = get_user(deps.as_ref(), addr0000).unwrap();
+    assert_eq!(query_response.exist, true);
   }
 }
