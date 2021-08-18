@@ -92,52 +92,71 @@ These files are in standard json-schema format, which should be usable by variou
 client side tools, either to auto-generate codecs, or just to validate incoming
 json wrt. the defined schema.
 
-## Preparing the Wasm bytecode for production
+## Run local node
 
-Before we upload it to a chain, we need to ensure the smallest output size possible,
-as this will be included in the body of a transaction. We also want to have a
-reproducible build process, so third parties can verify that the uploaded Wasm
-code did indeed come from the claimed rust code.
+In this example, we will run the simple CosmWasm Smart Contract in the LocalTerra Blockchain.
 
-To solve both these issues, we have produced `rust-optimizer`, a docker image to
-produce an extremely small build output in a consistent manner. The suggest way
-to run it is this:
+### Prerequisites
 
-```sh
-docker run --rm -v "$(pwd)":/code \
-  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
-  --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/rust-optimizer:0.10.4
+- LocalTerra
+
+LocalTerra is a complete Terra testnet and ecosystem containerized with Docker and orchestrated 
+with a simple docker-compose file, designed to make it easy for smart contract developers to test 
+out their contracts on a sandboxed environment before moving to a live testnet or mainnet.
+Please use this guide to install the [LocalTerra Blockchain](https://github.com/terra-money/localterra)
+
+- wasmd
+
+wasmd is the backbone of CosmWasm platform. It is the implementation of a Cosmoszone with wasm 
+smart contracts enabled.
+
+```
+git clone https://github.com/CosmWasm/wasmd.git
+cd wasmd
+# replace the v0.16.0 with the most stable version on https://github.com/CosmWasm/wasmd/releases
+git checkout v0.16.0
+make install
+
+# verify the installation
+wasmd version
 ```
 
-We must mount the contract code to `/code`. You can use a absolute path instead
-of `$(pwd)` if you don't want to `cd` to the directory first. The other two
-volumes are nice for speedup. Mounting `/code/target` in particular is useful
-to avoid docker overwriting your local dev files with root permissions.
-Note the `/code/target` cache is unique for each contract being compiled to limit
-interference, while the registry cache is global.
+### Run Local Node
 
-This is rather slow compared to local compilations, especially the first compile
-of a given contract. The use of the two volume caches is very useful to speed up
-following compiles of the same contract.
-
-This produces a `contract.wasm` file in the current directory (which must be the root
-directory of your rust project, the one with `Cargo.toml` inside). As well as
-`hash.txt` containing the Sha256 hash of `contract.wasm`, and it will rebuild
-your schema files as well.
-
-### Testing production build
-
-Once we have this compressed `contract.wasm`, we may want to ensure it is actually
-doing everything it is supposed to (as it is about 4% of the original size).
-If you update the "WASM" line in `tests/integration.rs`, it will run the integration
-steps on the optimized build, not just the normal build. I have never seen a different
-behavior, but it is nice to verify sometimes.
-
-```rust
-static WASM: &[u8] = include_bytes!("../contract.wasm");
 ```
+# default home is ~/.wasmd
+# if you want to setup multiple apps on your local make sure to change this value
+APP_HOME="~/.wasmd"
+RPC="http://localhost:26657"
+CHAIN_ID="localnet"
+# initialize wasmd configuration files
+wasmd init localnet --chain-id ${CHAIN_ID} --home ${APP_HOME}
 
-Note that this is the same (deterministic) code you will be uploading to
-a blockchain to test it out, as we need to shrink the size and produce a
-clear mapping from wasm hash back to the source code.
+# add minimum gas prices config to app configuration file
+sed -i -r 's/minimum-gas-prices = ""/minimum-gas-prices = "0.01ucosm"/' ${APP_HOME}/config/app.toml
+
+# Create main address
+# --keyring-backend test is for testing purposes
+# Change it to --keyring-backend file for secure usage.
+export KEYRING="--keyring-backend test --keyring-dir $HOME/.wasmd_keys"
+wasmd keys add main $KEYRING
+
+# create validator address
+wasmd keys add validator $KEYRING
+
+# add your wallet addresses to genesis
+wasmd add-genesis-account $(wasmd keys show -a main $KEYRING) 10000000000ucosm,10000000000stake --home ${APP_HOME}
+wasmd add-genesis-account $(wasmd keys show -a validator $KEYRING) 10000000000ucosm,10000000000stake --home ${APP_HOME}
+
+# add fred's address as validator's address
+wasmd gentx validator 1000000000stake --home ${APP_HOME} --chain-id ${CHAIN_ID} $KEYRING
+
+# collect gentxs to genesis
+wasmd collect-gentxs --home ${APP_HOME}
+
+# validate the genesis file
+wasmd validate-genesis --home ${APP_HOME}
+
+# run the node
+wasmd start --home ${APP_HOME}
+```
