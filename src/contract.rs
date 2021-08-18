@@ -15,7 +15,7 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
   let state = State {
     users: vec![],
-    owner: msg.recipient,
+    owner: msg.owner,
   };
 
   config(deps.storage).save(&state)?;
@@ -136,5 +136,39 @@ fn validate_name(name: &str) -> Result<(), ContractError> {
         Err(ContractError::InvalidCharacter { c })
       }
     }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+  use cosmwasm_std::{coins, Addr};
+
+  fn init_msg() -> InstantiateMsg {
+    InstantiateMsg {
+      owner: String::from("benefits"),
+    }
+  }
+
+  #[test]
+  fn proper_initialization() {
+    let mut deps = mock_dependencies(&[]);
+    let msg = init_msg();
+    let mut env = mock_env();
+    let info = mock_info("creator", &coins(1000, "earth"));
+
+    let res = instantiate(deps.as_mut(), env, info, msg).unwrap();
+    assert_eq!(0, res.messages.len());
+    
+    // it worked, let's query the state
+    let state = config_read(&mut deps.storage).load().unwrap();
+    assert_eq!(
+      state,
+      State {
+        users: vec![],
+        owner: String::from("benefits"),
+      }
+    );
   }
 }
