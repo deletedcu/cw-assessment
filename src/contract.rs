@@ -15,7 +15,7 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
   let state = State {
     users: vec![],
-    owner: env.contract.address,
+    owner: deps.api.addr_validate(&env.contract.address.as_str())?,
   };
 
   config(deps.storage).save(&state)?;
