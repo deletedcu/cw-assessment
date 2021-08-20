@@ -9,7 +9,7 @@ pub static CONFIG_KEY: &[u8] = b"config";
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema)]
 pub struct State {
   pub users: Vec<Addr>,
-  pub owner: String,
+  pub owner: Addr,
 }
 
 pub fn config(storage: &mut dyn Storage) -> Singleton<State> {

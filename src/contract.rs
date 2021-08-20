@@ -9,13 +9,13 @@ const MAX_NAME_LENGTH: u64 = 64;
 
 pub fn instantiate(
   deps: DepsMut,
-  _env: Env,
+  env: Env,
   _info: MessageInfo,
-  msg: InstantiateMsg,
+  _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
   let state = State {
     users: vec![],
-    owner: msg.owner,
+    owner: env.contract.address,
   };
 
   config(deps.storage).save(&state)?;
@@ -42,7 +42,7 @@ fn add_user(
 ) -> Result<Response, ContractError> {
   let mut state = config(deps.storage).load()?;
 
-  if state.owner != user.as_str() {
+  if user != state.owner {
     return Err(ContractError::Unauthorized {});
   }
 
@@ -62,7 +62,7 @@ fn remove_user(
 ) -> Result<Response, ContractError> {
   let mut state = config(deps.storage).load()?;
 
-  if state.owner != user.as_str() {
+  if user != state.owner {
     return Err(ContractError::Unauthorized {});
   }
 
@@ -145,7 +145,7 @@ mod tests {
 
   fn init_msg() -> InstantiateMsg {
     InstantiateMsg {
-      owner: String::from("benefits"),
+      
     }
   }
 
@@ -165,7 +165,7 @@ mod tests {
       state,
       State {
         users: vec![],
-        owner: String::from("benefits"),
+        owner: Addr::unchecked("benefits"),
       }
     );
   }
