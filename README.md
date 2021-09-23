@@ -86,6 +86,14 @@ These files are in standard json-schema format, which should be usable by variou
 client side tools, either to auto-generate codecs, or just to validate incoming
 json wrt. the defined schema.
 
+## Generating `contract.wasm` and `hash.txt`
+```
+docker run --rm -v "$(pwd)":/code \
+  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+  --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+  cosmwasm/rust-optimizer:0.12.1
+```
+
 ## Run local node
 
 In this example, we will run the simple CosmWasm Smart Contract in the LocalTerra Blockchain.

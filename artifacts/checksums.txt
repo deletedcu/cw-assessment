@@ -1,0 +1,1 @@
+e52bac23b1cfa10477741946645507c716ceeb354f97f04d1e9d0136efcf6135  cw_assessment.wasm
