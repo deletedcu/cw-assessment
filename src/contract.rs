@@ -9,13 +9,13 @@ const MAX_NAME_LENGTH: u64 = 64;
 
 pub fn instantiate(
   deps: DepsMut,
-  env: Env,
+  _env: Env,
   _info: MessageInfo,
-  _msg: InstantiateMsg,
+  msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
   let state = State {
-    users: vec![],
-    owner: deps.api.addr_validate(&env.contract.address.as_str())?,
+    users: msg.users,
+    owner: msg.owner,
   };
 
   config(deps.storage).save(&state)?;
@@ -24,25 +24,23 @@ pub fn instantiate(
 
 pub fn execute(
   deps: DepsMut,
-  env: Env,
-  info: MessageInfo,
+  _env: Env,
+  _info: MessageInfo,
   msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
   match msg {
-    ExecuteMsg::AddUser {user} => add_user(deps, env, info, user),
-    ExecuteMsg::RemoveUser {user} => remove_user(deps, env, info, user),
+    ExecuteMsg::AddUser {user} => add_user(deps, user),
+    ExecuteMsg::RemoveUser {user} => remove_user(deps, user),
   }
 }
 
 fn add_user(
   deps: DepsMut,
-  _env: Env,
-  _info: MessageInfo,
   user: Addr,
 ) -> Result<Response, ContractError> {
   let mut state = config(deps.storage).load()?;
 
-  if user != state.owner {
+  if user.ne(&state.owner) {
     return Err(ContractError::Unauthorized {});
   }
 
@@ -56,17 +54,14 @@ fn add_user(
 
 fn remove_user(
   deps: DepsMut,
-  _env: Env,
-  _info: MessageInfo,
   user: Addr,
 ) -> Result<Response, ContractError> {
   let mut state = config(deps.storage).load()?;
 
-  if user != state.owner {
+  if user.ne(&state.owner) {
     return Err(ContractError::Unauthorized {});
   }
 
-  // TODO: check vec delete function
   let index = state.users.iter().position(|x| *x == user).unwrap();
   if index > 0 {
     state.users.remove(index);
@@ -145,7 +140,8 @@ mod tests {
 
   fn init_msg() -> InstantiateMsg {
     InstantiateMsg {
-      
+      owner: Addr::unchecked("beneficiary"),
+      users: vec![],
     }
   }
 
@@ -165,7 +161,7 @@ mod tests {
       state,
       State {
         users: vec![],
-        owner: Addr::unchecked("benefits"),
+        owner: Addr::unchecked("beneficiary"),
       }
     );
   }

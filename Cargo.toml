@@ -26,13 +26,13 @@ overflow-checks = true
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-cosmwasm-std = "0.16.0"
-cosmwasm-storage = "0.16.0"
-schemars = "0.8.3"
-thiserror = "1.0.26"
-serde = { version = "1.0.127", default-features = false, features = ["derive"] }
+cosmwasm-std = "0.16.2"
+cosmwasm-storage = "0.16.2"
+schemars = "0.8.5"
+thiserror = "1.0.29"
+serde = { version = "1.0.130", default-features = false, features = ["derive"] }
 hex = "0.4.3"
 
 [dev-dependencies]
-cosmwasm-schema = "0.16.0"
-cosmwasm-vm = "0.16.0"
+cosmwasm-schema = "0.16.2"
+cosmwasm-vm = "0.16.2"
