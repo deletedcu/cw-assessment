@@ -1,5 +1,5 @@
 [package]
-name = "cw-assessment"
+name = "interview-challenge"
 version = "1.0.0"
 edition = "2018"
 authors = ["Compass Hub <curest0x1021@users.noreply.github.com>"]

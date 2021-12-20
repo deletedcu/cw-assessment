@@ -1,4 +1,4 @@
-use cosmwasm_std::{to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
 use crate::state::{config, config_read, State};
 use crate::error::ContractError;
@@ -14,8 +14,8 @@ pub fn instantiate(
   msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
   let state = State {
-    users: msg.users,
-    owner: msg.owner,
+    owner: deps.api.addr_validate(&msg.owner)?,
+    users: vec![],
   };
 
   config(deps.storage).save(&state)?;
@@ -23,49 +23,80 @@ pub fn instantiate(
 }
 
 pub fn execute(
-  deps: DepsMut,
+  deps: &mut DepsMut,
   _env: Env,
-  _info: MessageInfo,
+  info: MessageInfo,
   msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
   match msg {
-    ExecuteMsg::AddUser {user} => add_user(deps, user),
-    ExecuteMsg::RemoveUser {user} => remove_user(deps, user),
+    ExecuteMsg::AddUser {user} => add_user(deps, info, user),
+    ExecuteMsg::RemoveUser {user} => remove_user(deps, info, user),
+    ExecuteMsg::UpdateUsers {add, remove} => update_users(deps, info, add, remove)
   }
 }
 
 fn add_user(
-  deps: DepsMut,
-  user: Addr,
+  deps: &mut DepsMut,
+  info: MessageInfo,
+  user: String,
 ) -> Result<Response, ContractError> {
   let mut state = config(deps.storage).load()?;
-
-  if user.ne(&state.owner) {
+  if info.sender != state.owner {
     return Err(ContractError::Unauthorized {});
   }
 
-  validate_name(user.as_str())?;
+  validate_name(&user)?;
+  let user_addr = deps.api.addr_validate(&user)?;
 
-  state.users.push(user);
-  config(deps.storage).save(&state)?;
+  let index = state.users.iter().position(|x| *x == user_addr).unwrap();
+  if index >= 0 {
+    Ok(Response::default())
+  } else {
+    state.users.push(user_addr);
+    config(deps.storage).save(&state)?;
+    Ok(Response::default())
+  }
+}
+
+fn remove_user(
+  deps: &mut DepsMut,
+  info: MessageInfo,
+  user: String,
+) -> Result<Response, ContractError> {
+  let mut state = config(deps.storage).load()?;
+
+  if info.sender != state.owner {
+    return Err(ContractError::Unauthorized {});
+  }
+
+  let user_addr = deps.api.addr_validate(&user)?;
+  let index = state.users.iter().position(|x| *x == user_addr).unwrap();
+  if index >= 0 {
+    state.users.remove(index);
+    config(deps.storage).save(&state)?;
+  }
 
   Ok(Response::default())
 }
 
-fn remove_user(
-  deps: DepsMut,
-  user: Addr,
+fn update_users(
+  deps: &mut DepsMut,
+  info: MessageInfo,
+  add: Vec<String>,
+  remove: Vec<String>,
 ) -> Result<Response, ContractError> {
-  let mut state = config(deps.storage).load()?;
+  let state = config(deps.storage).load()?;
 
-  if user.ne(&state.owner) {
+  if info.sender.clone() != state.owner {
     return Err(ContractError::Unauthorized {});
   }
 
-  let index = state.users.iter().position(|x| *x == user).unwrap();
-  if index > 0 {
-    state.users.remove(index);
-    config(deps.storage).save(&state)?;
+  for user in add.into_iter() {
+    let _res = add_user(deps, info.clone(), user);
+  }
+
+  for user in remove.into_iter() {
+    let _res = remove_user(deps, info.clone(), user);
   }
 
   Ok(Response::default())
@@ -92,10 +123,11 @@ fn get_users(
 
 fn get_user(
   deps: Deps,
-  user: Addr,
+  user: String,
 ) -> StdResult<ExistResponse> {
   let state = config_read(deps.storage).load()?;
-  let exist = state.users.contains(&user);
+  let user_addr = deps.api.addr_validate(&user)?;
+  let exist = state.users.contains(&user_addr);
   
   Ok(ExistResponse {exist})
 }
@@ -140,7 +172,7 @@ mod tests {
 
   fn init_msg() -> InstantiateMsg {
     InstantiateMsg {
-      owner: Addr::unchecked("beneficiary"),
+      owner: "beneficiary".to_string(),
       users: vec![],
     }
   }
@@ -177,10 +209,10 @@ mod tests {
     assert_eq!(0, init_res.messages.len());
 
     // AddUser test
-    let msg = ExecuteMsg::AddUser { user: Addr::unchecked("addr000")};
+    let msg = ExecuteMsg::AddUser { user: "addr000".to_string()};
     let env = mock_env();
     let info = mock_info("beneficiary", &[]);
-    let execute_res = execute(deps.as_mut(), env, info, msg.clone());
+    let execute_res = execute(&mut deps.as_mut(), env, info, msg.clone());
     match execute_res.unwrap_err() {
       ContractError::Unauthorized { .. } => {}
       e => panic!("Unexpected error: {:?}", e),
@@ -198,10 +230,10 @@ mod tests {
     assert_eq!(0, init_res.messages.len());
 
     // RemoveUser test
-    let msg = ExecuteMsg::RemoveUser { user: Addr::unchecked("addr000")};
+    let msg = ExecuteMsg::RemoveUser { user: "addr000".to_string()};
     let env = mock_env();
     let info = mock_info("beneficiary", &[]);
-    let execute_res = execute(deps.as_mut(), env, info, msg.clone());
+    let execute_res = execute(&mut deps.as_mut(), env, info, msg.clone());
     match execute_res.unwrap_err() {
       ContractError::Unauthorized { .. } => {}
       e => panic!("Unexpected error: {:?}", e),
@@ -222,7 +254,7 @@ mod tests {
   fn query_get_user() {
     execute_add_user();
     let deps = mock_dependencies(&[]);
-    let addr0000 = Addr::unchecked("addr0000");
+    let addr0000 = "addr0000".to_string();
     // now let's query
     let query_response = get_user(deps.as_ref(), addr0000).unwrap();
     assert_eq!(query_response.exist, true);

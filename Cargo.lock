@@ -332,20 +332,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw-assessment"
-version = "1.0.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cosmwasm-vm",
- "hex",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "darling"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -627,6 +613,20 @@ dependencies = [
  "autocfg",
  "hashbrown",
  "serde",
+]
+
+[[package]]
+name = "interview-challenge"
+version = "1.0.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cosmwasm-vm",
+ "hex",
+ "schemars",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]
